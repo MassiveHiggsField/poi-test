@@ -50,6 +50,9 @@
                 <configuration>
                     <mainClass>poitest.SSPerformance</mainClass>
                 </configuration>
+                <arguments>
+                    <argument>-Xmx1g -Xms1g -Dorg.apache.poi.util.POILogger=org.apache.poi.util.NullLogger</argument>
+                </arguments>
             </plugin>
         </plugins>
     </build>
