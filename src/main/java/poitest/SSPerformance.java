@@ -18,6 +18,7 @@
  */
 package poitest;
 
+import org.apache.poi.Version;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -33,6 +34,8 @@ import java.util.Map;
 
 public class SSPerformance {
     public static void main(String[] args) {
+
+        System.out.println("Apache POI Version: " + Version.getVersion());
 
         args = new String[] {"XSSF", "50000", "50", "0"};
 
