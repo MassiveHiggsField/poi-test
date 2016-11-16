@@ -34,9 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SSPerformance {
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws IOException {
         args = new String[] {"XSSF", "50000", "50", "0"};
+
         if (args.length != 4) usage("need four command arguments");
 
         String type = args[0];
@@ -48,6 +48,32 @@ public class SSPerformance {
         int cols = parseInt(args[2], "Failed to parse cols value as integer");
         boolean saveFile = parseInt(args[3], "Failed to parse saveFile value as integer") != 0;
 
+        addContent(workBook, isHType, rows, cols);
+
+        if (saveFile) {
+            String fileName = type + "_" + rows + "_" + cols + "." + getFileSuffix(args[0]);
+            saveFile(workBook, fileName);
+        }
+        workBook.close();
+
+        NumberFormat format = NumberFormat.getInstance();
+        Runtime runtime = Runtime.getRuntime();
+
+        long timeFinished = System.currentTimeMillis();
+        long maxMemory = runtime.maxMemory();
+
+        System.out.println("#########################################################");
+        System.out.println("[POI-TEST] Settings: type=" + type + " rows=" + rows + " cols=" + cols + " saveFile=" + saveFile);
+        System.out.println("[POI-TEST] Java Version: " + System.getProperty("java.version"));
+        System.out.println("[POI-TEST] Apache POI Version: " + Version.getVersion());
+        System.out.println("[POI-TEST] POILogger: " + System.getProperty("org.apache.poi.util.POILogger"));
+        System.out.println("[POI-TEST] Elapsed: " +  (timeFinished-timeStarted)/1000 + " seconds");
+        System.out.println("[POI-TEST] Max memory used: " + format.format(maxMemory / 1024 / 1024) + "mb");
+        System.out.println("[POI-TEST] ");
+        System.out.println("#########################################################");
+    }
+
+    private static void addContent(Workbook workBook, boolean isHType, int rows, int cols) {
         Map<String, CellStyle> styles = createStyles(workBook);
 
         Sheet sheet = workBook.createSheet("Main Sheet");
@@ -72,77 +98,66 @@ public class SSPerformance {
 
             Row row = sheet.createRow(rowIndexInSheet);
             for (int colIndex = 0; colIndex < cols; colIndex++) {
-                Cell cell = row.createCell(colIndex);
-                String address = new CellReference(cell).formatAsString();
-                switch (colIndex){
-                    case 0:
-                        // column A: default number format
-                        cell.setCellValue(value++);
-                        break;
-                    case 1:
-                        // column B: #,##0
-                        cell.setCellValue(value++);
-                        cell.setCellStyle(styles.get("#,##0.00"));
-                        break;
-                    case 2:
-                        // column C: $#,##0.00
-                        cell.setCellValue(value++);
-                        cell.setCellStyle(styles.get("$#,##0.00"));
-                        break;
-                    case 3:
-                        // column D: red bold text on yellow background
-                        cell.setCellValue(address);
-                        cell.setCellStyle(styles.get("red-bold"));
-                        break;
-                    case 4:
-                        // column E: boolean
-                        // TODO booleans are shown as 1/0 instead of TRUE/FALSE
-                        cell.setCellValue(rowIndex % 2 == 0);
-                        break;
-                    case 5:
-                        // column F:  date / time
-                        cell.setCellValue(calendar);
-                        cell.setCellStyle(styles.get("m/d/yyyy"));
-                        calendar.roll(Calendar.DAY_OF_YEAR, -1);
-                        break;
-                    case 6:
-                        // column F: formula
-                        // TODO formulas are not yet supported  in SXSSF
-                        //cell.setCellFormula("SUM(A" + (rowIndex+1) + ":E" + (rowIndex+1)+ ")");
-                        //break;
-                    default:
-                        cell.setCellValue(value++);
-                        break;
-                }
+                value = populateCell(styles, value, calendar, rowIndex, row, colIndex);
             }
             rowIndexInSheet++;
         }
-        if (saveFile) {
-            String fileName = type + "_" + rows + "_" + cols + "." + getFileSuffix(args[0]);
-            try {
-                FileOutputStream out = new FileOutputStream(fileName);
-                workBook.write(out);
-                out.close();
-            } catch (IOException ioe) {
-                System.err.println("Error: failed to write to file \"" + fileName + "\", reason=" + ioe.getMessage());
-            }
+    }
+
+    private static double populateCell(Map<String, CellStyle> styles, double value, Calendar calendar, int rowIndex, Row row, int colIndex) {
+        Cell cell = row.createCell(colIndex);
+        String address = new CellReference(cell).formatAsString();
+        switch (colIndex){
+            case 0:
+                // column A: default number format
+                cell.setCellValue(value++);
+                break;
+            case 1:
+                // column B: #,##0
+                cell.setCellValue(value++);
+                cell.setCellStyle(styles.get("#,##0.00"));
+                break;
+            case 2:
+                // column C: $#,##0.00
+                cell.setCellValue(value++);
+                cell.setCellStyle(styles.get("$#,##0.00"));
+                break;
+            case 3:
+                // column D: red bold text on yellow background
+                cell.setCellValue(address);
+                cell.setCellStyle(styles.get("red-bold"));
+                break;
+            case 4:
+                // column E: boolean
+                // TODO booleans are shown as 1/0 instead of TRUE/FALSE
+                cell.setCellValue(rowIndex % 2 == 0);
+                break;
+            case 5:
+                // column F:  date / time
+                cell.setCellValue(calendar);
+                cell.setCellStyle(styles.get("m/d/yyyy"));
+                calendar.roll(Calendar.DAY_OF_YEAR, -1);
+                break;
+            case 6:
+                // column F: formula
+                // TODO formulas are not yet supported  in SXSSF
+                //cell.setCellFormula("SUM(A" + (rowIndex+1) + ":E" + (rowIndex+1)+ ")");
+                //break;
+            default:
+                cell.setCellValue(value++);
+                break;
         }
+        return value;
+    }
 
-        NumberFormat format = NumberFormat.getInstance();
-        Runtime runtime = Runtime.getRuntime();
-
-        long timeFinished = System.currentTimeMillis();
-        long maxMemory = runtime.maxMemory();
-
-        System.out.println("#########################################################");
-        System.out.println("[POI-TEST] Settings: type=" + type + " rows=" + rows + " cols=" + cols + " saveFile=" + saveFile);
-        System.out.println("[POI-TEST] Java Version: " + System.getProperty("java.version"));
-        System.out.println("[POI-TEST] Apache POI Version: " + Version.getVersion());
-        System.out.println("[POI-TEST] POILogger: " + System.getProperty("org.apache.poi.util.POILogger"));
-        System.out.println("[POI-TEST] Elapsed: " +  (timeFinished-timeStarted)/1000 + " seconds");
-        System.out.println("[POI-TEST] Max memory used: " + format.format(maxMemory / 1024) + "mb");
-        System.out.println("[POI-TEST] ");
-        System.out.println("#########################################################");
+    private static void saveFile(Workbook workBook, String fileName) {
+        try {
+            FileOutputStream out = new FileOutputStream(fileName);
+            workBook.write(out);
+            out.close();
+        } catch (IOException ioe) {
+            System.err.println("Error: failed to write to file \"" + fileName + "\", reason=" + ioe.getMessage());
+        }
     }
 
     private static Map<String, CellStyle> createStyles(Workbook wb) {
@@ -151,24 +166,24 @@ public class SSPerformance {
 
         Font headerFont = wb.createFont();
         headerFont.setFontHeightInPoints((short) 14);
-        headerFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+        headerFont.setBold(true);
         style = wb.createCellStyle();
-        style.setAlignment(CellStyle.ALIGN_CENTER);
-        style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
         style.setFont(headerFont);
         style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
-        style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("header", style);
 
         Font monthFont = wb.createFont();
         monthFont.setFontHeightInPoints((short)12);
         monthFont.setColor(IndexedColors.RED.getIndex());
-        monthFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+        monthFont.setBold(true);
         style = wb.createCellStyle();
-        style.setAlignment(CellStyle.ALIGN_CENTER);
-        style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
         style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
-        style.setFillPattern(CellStyle.SOLID_FOREGROUND);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         style.setFont(monthFont);
         styles.put("red-bold", style);
 
