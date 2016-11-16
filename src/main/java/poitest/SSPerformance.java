@@ -35,8 +35,6 @@ import java.util.Map;
 
 public class SSPerformance {
     public static void main(String[] args) throws IOException {
-        args = new String[] {"XSSF", "50000", "50", "0"};
-
         if (args.length != 4) usage("need four command arguments");
 
         String type = args[0];
