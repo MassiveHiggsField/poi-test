@@ -28,6 +28,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,10 +36,7 @@ import java.util.Map;
 public class SSPerformance {
     public static void main(String[] args) {
 
-        System.out.println("Apache POI Version: " + Version.getVersion());
-
         args = new String[] {"XSSF", "50000", "50", "0"};
-
         if (args.length != 4) usage("need four command arguments");
 
         String type = args[0];
@@ -129,11 +127,25 @@ public class SSPerformance {
                 System.err.println("Error: failed to write to file \"" + fileName + "\", reason=" + ioe.getMessage());
             }
         }
+
+        NumberFormat format = NumberFormat.getInstance();
+        Runtime runtime = Runtime.getRuntime();
+
         long timeFinished = System.currentTimeMillis();
-        System.out.println("Elapsed " + (timeFinished-timeStarted)/1000 + " seconds");
+        long maxMemory = runtime.maxMemory();
+
+        System.out.println("#########################################################");
+        System.out.println("[POI-TEST] Settings: type=" + type + " rows=" + rows + " cols=" + cols + " saveFile=" + saveFile);
+        System.out.println("[POI-TEST] Java Version: " + System.getProperty("java.version"));
+        System.out.println("[POI-TEST] Apache POI Version: " + Version.getVersion());
+        System.out.println("[POI-TEST] POILogger: " + System.getProperty("org.apache.poi.util.POILogger"));
+        System.out.println("[POI-TEST] Elapsed: " +  (timeFinished-timeStarted)/1000 + " seconds");
+        System.out.println("[POI-TEST] Max memory used: " + format.format(maxMemory / 1024) + "mb");
+        System.out.println("[POI-TEST] ");
+        System.out.println("#########################################################");
     }
 
-    static Map<String, CellStyle> createStyles(Workbook wb) {
+    private static Map<String, CellStyle> createStyles(Workbook wb) {
         Map<String, CellStyle> styles = new HashMap<String, CellStyle>();
         CellStyle style;
 
@@ -170,14 +182,13 @@ public class SSPerformance {
         return styles;
     }
 
-
-    static void usage(String message) {
+    private static void usage(String message) {
         System.err.println(message);
         System.err.println("usage: java SSPerformanceTest HSSF|XSSF|SXSSF rows cols saveFile (0|1)? ");
         System.exit(1);
     }
 
-    static Workbook createWorkbook(String type) {
+    private static Workbook createWorkbook(String type) {
         if ("HSSF".equals(type))
             return new HSSFWorkbook();
         else if ("XSSF".equals(type))
@@ -189,7 +200,7 @@ public class SSPerformance {
         return null;
     }
 
-    static String getFileSuffix(String type) {
+    private static String getFileSuffix(String type) {
         if ("HSSF".equals(type))
             return "xls";
         else if ("XSSF".equals(type))
@@ -199,7 +210,7 @@ public class SSPerformance {
         return null;
     }
 
-    static int parseInt(String value, String msg) {
+    private static int parseInt(String value, String msg) {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
